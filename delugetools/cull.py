@@ -8,6 +8,8 @@ from urllib.parse import urlparse
 import sys
 import re
 from concurrent.futures import ThreadPoolExecutor
+from tabulate import tabulate
+
 
 def cull_unregistered(client):
     """
@@ -15,10 +17,15 @@ def cull_unregistered(client):
     """
     torrents = decodedict(client.call('core.get_torrents_status', {},
                                       ['name', 'tracker_status', 'total_size', 'time_added']))
+    tors_deleted = 0
+    size_deleted = 0
     for torrent_id, torrent in torrents.items():
         if 'Unregistered torrent' in torrent["tracker_status"]:
             logging.warning("Deleting %s", torrent["name"])
             client.call('core.remove_torrent', torrent_id, True)
+            size_deleted += torrent["total_size"]
+            tors_deleted += 1
+    return (tors_deleted, size_deleted)
 
 
 def cull_by_diskspace(client, want_free=150 * GB):
@@ -28,7 +35,7 @@ def cull_by_diskspace(client, want_free=150 * GB):
 
     if to_free <= 0:
         logging.info("Already above disk free threshold (%sGB is free), aborting", round(freespace_bytes / GB, 2))
-        return
+        return (0, 0)
 
     logging.warning("Need to delete %sGB of torrents", round(to_free / GB, 2))
 
@@ -53,6 +60,8 @@ def cull_by_diskspace(client, want_free=150 * GB):
         logging.warning("Still need to free: {}GB".format(round(to_free / GB, 2)))
 
     logging.warning("Deleted %s torrents freeing %s GB", deleted_torrents, round(deleted_bytes / GB, 2))
+
+    return (deleted_torrents, deleted_bytes)
 
 
 def DelugeUri(v):
@@ -82,6 +91,7 @@ def main():
         sys.exit(2)
 
     clients = []
+    futures = []
     for server in args.server:
         uri = urlparse('deluge://{}'.format(server))
         client = DelugeRPCClient(uri.hostname, uri.port if uri.port else 58846, uri.username, uri.password)
@@ -90,17 +100,18 @@ def main():
 
     if args.action == "unreg":
         with ThreadPoolExecutor(max_workers=10) as pool:
-            #pool.map(cull_unregistered, clients)
-            for client in clients:
-                print(client)
-                pool.submit(cull_unregistered, client)
+            futures += [pool.submit(cull_unregistered, c) for c in clients]
 
     elif args.action == "space":
         with ThreadPoolExecutor(max_workers=10) as pool:
-            for client in clients:
-                print(client)
-                pool.submit(cull_by_diskspace, client, want_free=args.free * GB)
+            futures += [pool.submit(cull_by_diskspace, c, want_free=args.free * GB) for c in clients]
 
+    print(tabulate([["{}:{}".format(clients[i].host, clients[i].port),
+                     "{} GB".format(round(decodedict(clients[i].call('core.get_free_space')) / GB, 2)),
+                     futures[i].result()[0],
+                     "{} GB".format(round(futures[i].result()[1] / GB, 2))]
+                    for i in range(0, len(clients))],
+                   headers=["server", "space free", "rm'd", "newly freed"]))
 
 if __name__ == '__main__':
     main()

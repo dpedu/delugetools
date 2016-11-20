@@ -9,7 +9,7 @@ setup(name='delugetools',
       author='dpedu',
       author_email='dave@davepedu.com',
       packages=['delugetools'],
-      install_requires=['bencodepy==0.9.5', 'deluge-client'],
+      install_requires=['bencodepy==0.9.5', 'deluge-client', 'tabulate==0.7.7'],
       entry_points={'console_scripts': [
           'deluge-cull = delugetools.cull:main',
           'deluge-add = delugetools.add:main']},
