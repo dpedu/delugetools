@@ -1,5 +1,9 @@
+import argparse
+import re
+import bencodepy
 
 GB = 1024 * 1024 * 1024
+
 
 def decodedict(thing):
     """
@@ -20,3 +24,13 @@ def decodedict(thing):
         return dict((k.decode('utf-8'), decodedict(v))
                     for k, v in thing.items())
 
+
+def DelugeUri(v):
+    try:
+        return re.match(r'(([^:]+):([^@]+)@([^:$]+)(:([0-9]+))?)', v).group(0)
+    except:
+        raise argparse.ArgumentTypeError("String '{}' does not match required format".format(v))
+
+
+def parse_torrent(f_path):
+    return bencodepy.decode_from_file(f_path)

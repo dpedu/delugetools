@@ -3,10 +3,9 @@ import logging
 import argparse
 logging.basicConfig(level=logging.INFO)
 from deluge_client import DelugeRPCClient
-from delugetools.common import decodedict, GB
+from delugetools.common import decodedict, GB, DelugeUri
 from urllib.parse import urlparse
 import sys
-import re
 from concurrent.futures import ThreadPoolExecutor
 from tabulate import tabulate
 
@@ -62,13 +61,6 @@ def cull_by_diskspace(client, want_free=150 * GB):
     logging.warning("Deleted %s torrents freeing %s GB", deleted_torrents, round(deleted_bytes / GB, 2))
 
     return (deleted_torrents, deleted_bytes)
-
-
-def DelugeUri(v):
-    try:
-        return re.match(r'(([^:]+):([^@]+)@([^:$]+)(:([0-9]+))?)', v).group(0)
-    except:
-        raise argparse.ArgumentTypeError("String '{}' does not match required format".format(v))
 
 
 def main():
