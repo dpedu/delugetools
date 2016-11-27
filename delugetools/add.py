@@ -41,7 +41,7 @@ def main():
         client.connect()
         clients.append(client)
 
-    with ThreadPoolExecutor(max_workers=5) as pool:
+    with ThreadPoolExecutor(max_workers=1) as pool:
         for torrent_path in args.torrents:
             t_data = parse_torrent(torrent_path)
 
