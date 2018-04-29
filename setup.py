@@ -12,6 +12,7 @@ setup(name='delugetools',
       install_requires=['bencodepy==0.9.5', 'deluge-client', 'tabulate==0.7.7'],
       entry_points={'console_scripts': [
           'deluge-cull = delugetools.cull:main',
-          'deluge-add = delugetools.add:main']},
+          'deluge-add = delugetools.add:main',
+          'deluge-changetrack = delugetools.changetracker:main']},
       zip_safe=False)
 

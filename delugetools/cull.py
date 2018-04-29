@@ -76,7 +76,6 @@ def main():
     parser_free.add_argument("-f", "--free", help="Target free space in GB", type=int, required=True)
 
     args = parser.parse_args()
-    print(args)
 
     if not args.action:
         print("No action specified")
